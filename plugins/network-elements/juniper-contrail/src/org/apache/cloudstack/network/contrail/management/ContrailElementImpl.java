@@ -29,6 +29,7 @@ import javax.inject.Inject;
 import javax.naming.ConfigurationException;
 
 import org.apache.cloudstack.network.contrail.api.command.CreateServiceInstanceCmd;
+import org.apache.cloudstack.network.contrail.api.command.DeleteServiceInstanceCmd;
 import org.apache.cloudstack.network.contrail.model.InstanceIpModel;
 import org.apache.cloudstack.network.contrail.model.VMInterfaceModel;
 import org.apache.cloudstack.network.contrail.model.VirtualMachineModel;
@@ -43,17 +44,16 @@ import com.cloud.exception.ResourceUnavailableException;
 import com.cloud.network.Network;
 import com.cloud.network.Network.Capability;
 import com.cloud.network.Network.Provider;
+import com.cloud.network.Network;
 import com.cloud.network.Network.Service;
 import com.cloud.network.Networks.TrafficType;
 import com.cloud.network.PhysicalNetworkServiceProvider;
 import com.cloud.network.PublicIpAddress;
 import com.cloud.network.element.DhcpServiceProvider;
 import com.cloud.network.element.IpDeployer;
-import com.cloud.network.element.NetworkACLServiceProvider;
 import com.cloud.network.element.SourceNatServiceProvider;
 import com.cloud.network.element.StaticNatServiceProvider;
 import com.cloud.network.rules.StaticNat;
-import com.cloud.network.vpc.NetworkACLItem;
 import com.cloud.offering.NetworkOffering;
 import com.cloud.utils.component.AdapterBase;
 import com.cloud.vm.NicProfile;
@@ -68,12 +68,13 @@ import com.cloud.server.ConfigurationServer;
 import com.cloud.server.ConfigurationServerImpl;
 import com.cloud.network.dao.NetworkDao;
 import com.cloud.network.dao.NetworkVO;
+import com.cloud.utils.db.TransactionLegacy;
 import com.cloud.resource.ResourceManager;
 
 @Component
 @Local(value = {ContrailElement.class, StaticNatServiceProvider.class, IpDeployer.class, SourceNatServiceProvider.class})
 public class ContrailElementImpl extends AdapterBase
-    implements ContrailElement, StaticNatServiceProvider, IpDeployer, SourceNatServiceProvider, DhcpServiceProvider {
+        implements ContrailElement, StaticNatServiceProvider, IpDeployer, SourceNatServiceProvider, DhcpServiceProvider {
 
 	private static final Map<Service, Map<Capability, String>> _capabilities = InitCapabilities();
 
@@ -86,17 +87,12 @@ public class ContrailElementImpl extends AdapterBase
 	private static final Logger s_logger =
 			Logger.getLogger(ContrailElement.class);
 	
-    @Override
-    public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
-    	s_logger.debug("configure");
-    	return true;
-    }
-
     // PluggableService
     @Override
     public List<Class<?>> getCommands() {
     	List<Class<?>> cmdList = new ArrayList<Class<?>>();
         cmdList.add(CreateServiceInstanceCmd.class);
+        cmdList.add(DeleteServiceInstanceCmd.class);
         return cmdList;
     }
 
@@ -283,8 +279,8 @@ public class ContrailElementImpl extends AdapterBase
 		return true;
 	}
 
-	@Override
-	public boolean isReady(PhysicalNetworkServiceProvider provider) {
+        @Override
+        public boolean isReady(PhysicalNetworkServiceProvider provider) {
                 Map<String, String> serviceMap = ((ConfigurationServerImpl)_configServer).getServicesAndProvidersForNetwork( _manager.getRouterOffering().getId());
                 List<TrafficType> types = new ArrayList<TrafficType>();
                 types.add(TrafficType.Control);
@@ -294,7 +290,10 @@ public class ContrailElementImpl extends AdapterBase
                 if (systemNets != null && !systemNets.isEmpty()) {
                     for (NetworkVO net: systemNets) {
                         s_logger.debug("update system network service: " + net.getName() + "; service provider: " + serviceMap);
+                        TransactionLegacy txn = TransactionLegacy.currentTxn();
+                        txn.start();
                         _networksDao.update(net.getId(), net, serviceMap);
+                        txn.commit();
                     }
                 } else {
                     s_logger.debug("no system networks created yet");
@@ -306,13 +305,16 @@ public class ContrailElementImpl extends AdapterBase
                 if (systemNets != null && !systemNets.isEmpty()) {
                     for (NetworkVO net: systemNets) {
                         s_logger.debug("update system network service: " + net.getName() + "; service provider: " + serviceMap);
+                        TransactionLegacy txn = TransactionLegacy.currentTxn();
+                        txn.start();
                         _networksDao.update(net.getId(), net, serviceMap);
+                        txn.commit();
                     }
                 } else {
                     s_logger.debug("no system networks created yet");
                 }
-		return true;
-	}
+                return true;
+        }
 
 	@Override
 	public boolean shutdownProviderInstances(
@@ -329,17 +331,16 @@ public class ContrailElementImpl extends AdapterBase
 
 	@Override
 	public boolean verifyServicesCombination(Set<Service> services) {
-		// TODO Auto-generated method stub
 		s_logger.debug("NetworkElement verifyServices");
 		s_logger.debug("Services: " + services);
 		return true;
 	}
 
 
-    @Override
-    public IpDeployer getIpDeployer(Network network) {
-	return this;
-    }
+        @Override
+        public IpDeployer getIpDeployer(Network network) {
+                return this;
+        }
 
     @Override
     public boolean applyIps(Network network,
@@ -400,4 +401,5 @@ public class ContrailElementImpl extends AdapterBase
     		throws ResourceUnavailableException {
     	return false;
     }
+
 }

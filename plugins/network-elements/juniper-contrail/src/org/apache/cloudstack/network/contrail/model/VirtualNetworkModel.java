@@ -186,7 +186,7 @@ public class VirtualNetworkModel extends ModelObjectBase {
                 s_logger.warn("Unable to read virtual-network", ex);
             }
         }
-
+        
         _id = network.getId();
         
         try {
@@ -233,7 +233,7 @@ public class VirtualNetworkModel extends ModelObjectBase {
                 vn.setUuid(_uuid);
             } 
         }
-
+        
         if (_policyModel == null) {
             vn.clearNetworkPolicy();
         } else if (!_policyModel.hasPolicyRules()) {
@@ -421,23 +421,24 @@ public class VirtualNetworkModel extends ModelObjectBase {
                     "; db: " + dbSubnets + ", vnc: " + vncSubnets + ", diff: " + diff);
             return false;
         }
-
+        
         List<ObjectReference<VirtualNetworkPolicyType>> policyRefs = _vn.getNetworkPolicy();
+        
         if ((policyRefs == null || policyRefs.isEmpty()) && _policyModel != null) {
             return false;
         }
-
+        
         if ((policyRefs != null && !policyRefs.isEmpty()) && _policyModel == null) {
             return false;
         }
-
+        
         if (policyRefs != null && !policyRefs.isEmpty() && _policyModel != null) {
             ObjectReference<VirtualNetworkPolicyType> ref = policyRefs.get(0);
             if (!ref.getUuid().equals(_policyModel.getUuid())) {
                 return false; 
             }
         }
-
+        
         for (ModelObject successor: successors()) {
             if (!successor.verify(controller)) {
                 return false;
@@ -513,14 +514,14 @@ public class VirtualNetworkModel extends ModelObjectBase {
                     "; db: " + currentSubnets + ", vnc: " + newSubnets + ", diff: " + diff);
             return false;
         }
-
+        
         List<ObjectReference<VirtualNetworkPolicyType>> currentPolicyRefs = this._vn.getNetworkPolicy();
         List<ObjectReference<VirtualNetworkPolicyType>> latestPolicyRefs = latest._vn.getNetworkPolicy();
 
         if (currentPolicyRefs == null && latestPolicyRefs == null) {
             return true;
         }
-
+        
         if ((currentPolicyRefs == null && latestPolicyRefs != null) ||
                 (currentPolicyRefs != null && latestPolicyRefs == null) || 
                 (currentPolicyRefs.size() != latestPolicyRefs.size())) {
@@ -530,7 +531,7 @@ public class VirtualNetworkModel extends ModelObjectBase {
         if (currentPolicyRefs.isEmpty() && latestPolicyRefs.isEmpty()) {
             return true;
         }
-
+        
         //both must be non empty lists
         ObjectReference<VirtualNetworkPolicyType> ref1 = currentPolicyRefs.get(0);
         ObjectReference<VirtualNetworkPolicyType> ref2 = latestPolicyRefs.get(0);
@@ -538,7 +539,6 @@ public class VirtualNetworkModel extends ModelObjectBase {
         if ((ref1 != null && ref2 == null) || (ref1 == null && ref2 != null)) {
             return false;
         }
-
         if ((ref1.getUuid() != null && ref2.getUuid() == null) || (ref1.getUuid() == null && ref2.getUuid() != null)) {
             return false;
         }
@@ -554,15 +554,15 @@ public class VirtualNetworkModel extends ModelObjectBase {
     public FloatingIpPoolModel getFipPoolModel() {
         return _fipPoolModel;
     }
-
+    
     public void setFipPoolModel(FloatingIpPoolModel fipPoolModel) {
         _fipPoolModel = fipPoolModel;
     }
-
+    
     public NetworkPolicyModel getNetworkPolicyModel() {
         return _policyModel;
     }
-
+    
     public void addToNetworkPolicy(NetworkPolicyModel policyModel) {
         if (_policyModel != null) {
             _policyModel.removeSuccessor(this);
@@ -572,5 +572,4 @@ public class VirtualNetworkModel extends ModelObjectBase {
             _policyModel.addSuccessor(this);
         }
     } 
-
 }

@@ -33,6 +33,11 @@ for vendorconf in "@MSCONF@"/vendor/* ; do
 	if [ ! -d "$vendorconf" ] ; then continue ; fi
 	CLASSPATH=$vendorconf:$CLASSPATH
 done
+for jarfile in "/usr/share/cloudstack-management/webapps/client/WEB-INF/lib"/* ; do
+        if [ ! -d "$jarfile" ] ; then continue ; fi
+        CLASSPATH=$jarfile:$CLASSPATH
+done
+CLASSPATH=/usr/share/cloudstack-management/webapps/client/WEB-INF/classes:$CLASSPATH
 export CLASSPATH
 PATH=/sbin:/usr/sbin:$PATH
 export PATH

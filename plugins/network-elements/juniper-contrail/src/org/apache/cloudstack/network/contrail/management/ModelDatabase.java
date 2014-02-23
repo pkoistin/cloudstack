@@ -19,13 +19,12 @@ package org.apache.cloudstack.network.contrail.management;
 
 import java.util.TreeSet;
 
+import com.cloud.network.Networks.TrafficType;
 import org.apache.cloudstack.network.contrail.model.ModelObjectBase;
 import org.apache.cloudstack.network.contrail.model.NetworkPolicyModel;
 import org.apache.cloudstack.network.contrail.model.ServiceInstanceModel;
 import org.apache.cloudstack.network.contrail.model.VirtualMachineModel;
 import org.apache.cloudstack.network.contrail.model.VirtualNetworkModel;
-
-import com.cloud.network.Networks.TrafficType;
 
 public class ModelDatabase {
     TreeSet<ServiceInstanceModel> _serviceInstanceTable;
@@ -42,6 +41,7 @@ public class ModelDatabase {
         _vmTable = new TreeSet<VirtualMachineModel>(new ModelObjectBase.UuidComparator());
         _vnTable = new TreeSet<VirtualNetworkModel>(new ModelObjectBase.UuidComparator());
         _policyTable = new TreeSet<NetworkPolicyModel>(new ModelObjectBase.UuidComparator());
+
     }
     
     public TreeSet<ServiceInstanceModel> getServiceInstances() {

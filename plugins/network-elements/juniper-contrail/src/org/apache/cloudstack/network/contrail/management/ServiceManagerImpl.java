@@ -20,8 +20,8 @@ package org.apache.cloudstack.network.contrail.management;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.ejb.Local;
@@ -37,6 +37,9 @@ import com.cloud.event.EventTypes;
 import com.cloud.exception.InsufficientCapacityException;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.exception.ResourceUnavailableException;
+import com.cloud.exception.AgentUnavailableException;
+import com.cloud.exception.OperationTimedoutException;
+import com.cloud.exception.ConcurrentOperationException;
 import com.cloud.network.Network;
 import com.cloud.network.NetworkModel;
 import com.cloud.network.Networks.TrafficType;
@@ -48,7 +51,6 @@ import com.cloud.storage.VMTemplateVO;
 import com.cloud.template.VirtualMachineTemplate;
 import com.cloud.user.Account;
 import com.cloud.user.AccountService;
-import com.cloud.user.User;
 import com.cloud.user.UserVO;
 import com.cloud.user.dao.UserDao;
 import com.cloud.utils.Pair;
@@ -64,11 +66,11 @@ import org.apache.cloudstack.context.CallContext;
 import org.apache.cloudstack.network.contrail.api.response.ServiceInstanceResponse;
 import org.apache.cloudstack.network.contrail.model.ServiceInstanceModel;
 import org.apache.cloudstack.network.contrail.model.VirtualMachineModel;
-import org.apache.cloudstack.network.contrail.model.VirtualNetworkModel;
 
 import net.juniper.contrail.api.ApiConnector;
 import net.juniper.contrail.api.types.ServiceInstance;
 import net.juniper.contrail.api.types.VirtualNetwork;
+import org.apache.cloudstack.network.contrail.model.VirtualNetworkModel;
 
 @Local(value =  {ServiceManager.class})
 public class ServiceManagerImpl implements ServiceManager {
@@ -124,6 +126,8 @@ public class ServiceManagerImpl implements ServiceManager {
         Gson json = new Gson();
         String userData = json.toJson(kvmap);
         svm.setUserData(userData);
+
+        _vmDao.persist((UserVmVO) svm);
 
         try {
             _vmManager.allocate(instanceName, template, serviceOffering, networks,
@@ -245,4 +249,55 @@ public class ServiceManagerImpl implements ServiceManager {
         return response;
     }
 
+    /**
+     * delete a ServiceVM object.
+     * @return
+     */
+    @ActionEvent(eventType = EventTypes.EVENT_VM_DESTROY, eventDescription="deleteServiceInstance", create = true)
+    private boolean stopAndDestroyServiceVM(Long instanceId) {
+        boolean result;
+
+        UserVmVO vm = _vmDao.findById(instanceId);
+        if (vm == null) {
+            s_logger.warn("service virtual-machine lookup failed");
+            return false;
+        }
+
+        try {
+            _vmManager.destroy(vm.getUuid());
+        } catch (AgentUnavailableException ex) {
+            throw new CloudRuntimeException("vm destroy failed", ex);
+        } catch (OperationTimedoutException ex) {
+            throw new CloudRuntimeException("vm destroy failed", ex);
+        } catch (ConcurrentOperationException ex) {
+            throw new CloudRuntimeException("vm destroy failed", ex);
+        } catch (ResourceUnavailableException ex) {
+            throw new CloudRuntimeException("vm destroy failed", ex);
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean deleteServiceInstance(Long serviceInstanceId) {
+        String fqn;
+
+        s_logger.debug("deleteServiceInstance " );
+
+        // 1. Lookup service virtual-machine.
+        UserVmVO vm = _vmDao.findById(serviceInstanceId);
+        if (vm == null) {
+            s_logger.warn("service virtual-machine lookup failed");
+            return false;
+        }
+
+        // 3. destroy Nics and VM.
+        boolean result = stopAndDestroyServiceVM(serviceInstanceId);
+        if (result == false) {
+            s_logger.warn("destroy serviceVM failed");
+            return false;
+        }
+
+        return true;
+    }
 }

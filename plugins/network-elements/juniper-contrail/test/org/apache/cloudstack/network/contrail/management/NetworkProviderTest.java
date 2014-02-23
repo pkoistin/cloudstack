@@ -177,7 +177,7 @@ public class NetworkProviderTest extends TestCase {
                 _networkService.getIsolatedNetworksOwnedByAccountInZone(zone.getId(), system);
         for (Network net : list) {
             s_logger.debug("Delete network " + net.getName());
-            _networkService.deleteNetwork(net.getId(), false);
+            _networkService.deleteNetwork(net.getId());
         }
     }
 
@@ -462,16 +462,16 @@ public class NetworkProviderTest extends TestCase {
         } catch (IOException ex) {
             fail(ex.getMessage());
         }
-
+        
         //now db sync
         try {
             if (_dbSync.syncAll(DBSyncGeneric.SYNC_MODE_UPDATE) == ServerDBSync.SYNC_STATE_OUT_OF_SYNC) {
                 s_logger.info("# Cloudstack DB & VNC are out of sync - resync done");
             }
-
+        
             if (_dbSync.syncAll(DBSyncGeneric.SYNC_MODE_CHECK) == ServerDBSync.SYNC_STATE_OUT_OF_SYNC) {
                 s_logger.info("# Cloudstack DB & VNC are still out of sync");
-                fail("DB Sync failed");
+                fail("DB Sync failed"); 
             }
         } catch (Exception ex) {
             fail(ex.getMessage());

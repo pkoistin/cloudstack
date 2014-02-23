@@ -20,15 +20,13 @@ package org.apache.cloudstack.network.contrail.management;
 import java.util.List;
 import java.io.IOException;
 
-import org.apache.cloudstack.network.contrail.model.ModelController;
-import org.apache.cloudstack.network.contrail.model.VirtualNetworkModel;
-
 import net.juniper.contrail.api.ApiConnector;
 import net.juniper.contrail.api.types.FloatingIp;
 import net.juniper.contrail.api.types.NetworkPolicy;
 import net.juniper.contrail.api.types.Project;
-
 import net.juniper.contrail.api.types.VirtualNetwork;
+import org.apache.cloudstack.network.contrail.model.ModelController;
+import org.apache.cloudstack.network.contrail.model.VirtualNetworkModel;
 
 import com.cloud.network.Network;
 import com.cloud.network.Networks.TrafficType;
@@ -40,12 +38,18 @@ import com.cloud.network.dao.NetworkVO;
 import com.cloud.domain.DomainVO;
 import com.cloud.projects.ProjectVO;
 import com.cloud.network.vpc.NetworkACLVO;
+import com.cloud.network.vpc.VpcOffering;
+import com.cloud.network.vpc.VpcVO;
 
 public interface ContrailManager {
     public static final String routerOfferingName = "Juniper Contrail Network Offering";
     public static final String routerOfferingDisplayText = "Juniper Contrail Network Offering";
     public static final String routerPublicOfferingName = "Juniper Contrail Public Network Offering";
     public static final String routerPublicOfferingDisplayText = "Juniper Contrail Public Network Offering";
+    public static final String vpcRouterOfferingName = "Juniper Contrail VPC Network Offering";
+    public static final String vpcRouterOfferingDisplayText = "Juniper Contrail VPC Network Offering";
+    public static final String juniperVPCOfferingName = "Juniper Contrail VPC Offering";
+    public static final String juniperVPCOfferingDisplayText = "Juniper Contrail VPC Offering";
     public static final int DB_SYNC_INTERVAL_DEFAULT = 600000;
     public static final String VNC_ROOT_DOMAIN = "default-domain";
     public static final String VNC_DEFAULT_PROJECT = "default-project";
@@ -53,7 +57,8 @@ public interface ContrailManager {
 
     public NetworkOffering getRouterOffering();
     public NetworkOffering getPublicRouterOffering();
-
+    public NetworkOffering getVpcRouterOffering();
+    public VpcOffering getVpcOffering();
     public void syncNetworkDB(short syncMode) throws Exception;
 
     public boolean isManagedPhysicalNetwork(Network network);
@@ -92,13 +97,14 @@ public interface ContrailManager {
     public List<NetworkVO> findManagedNetworks(List<TrafficType> types);
     public List<NetworkVO> findSystemNetworks(List<TrafficType> types);
     public List<IPAddressVO> findManagedPublicIps();
-    public List<NetworkACLVO> findManagedACLs();
     public VirtualNetwork findDefaultVirtualNetwork(TrafficType trafficType)
             throws IOException;
     public List<FloatingIp> getFloatingIps();
     public VirtualNetworkModel lookupPublicNetworkModel();
     public boolean createFloatingIp(PublicIpAddress ip);
     public boolean deleteFloatingIp(PublicIpAddress ip);
+    List<VpcVO> findManagedVpcs();
+    List<NetworkACLVO> findManagedACLs();
     public boolean isSystemDefaultNetworkPolicy(NetworkPolicy policy);
 }
   

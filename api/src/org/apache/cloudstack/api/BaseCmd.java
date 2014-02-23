@@ -146,7 +146,7 @@ public abstract class BaseCmd {
     @Inject public ApplicationLoadBalancerService _newLbSvc;
     @Inject public ApplicationLoadBalancerService _appLbService;
     @Inject public AffinityGroupService _affinityGroupService;
-    @Inject public InternalLoadBalancerElementService _internalLbElementSvc;
+    //@Inject public InternalLoadBalancerElementService _internalLbElementSvc;
     @Inject public InternalLoadBalancerVMService _internalLbSvc;
     @Inject public NetworkModel _ntwkModel;
     @Inject public AlertService _alertSvc;

@@ -111,7 +111,6 @@ The Apache CloudStack files shared between agent and management server
 
 %package agent
 Summary: CloudStack Agent for KVM hypervisors
-Requires: openssh-clients
 Requires: java >= 1.6.0
 Requires: %{name}-common = %{_ver}
 Requires: libvirt
@@ -126,8 +125,6 @@ Requires: jakarta-commons-daemon
 Requires: jakarta-commons-daemon-jsvc
 Requires: perl
 Requires: libvirt-python
-Requires: qemu-img
-Requires: qemu-kvm
 Provides: cloud-agent
 Obsoletes: cloud-agent < 4.1.0
 Obsoletes: cloud-agent-libs < 4.1.0
@@ -150,6 +147,9 @@ The CloudStack usage calculation service
 
 %package cli
 Summary: Apache CloudStack CLI
+Requires: python-setuptools
+Requires: python-prettytable
+Requires: python-pygments >= 1.5
 Provides: python-cloudmonkey
 Provides: python-marvin
 Group: System Environment/Libraries
@@ -399,6 +399,10 @@ fi
 if [ ! -f %{_datadir}/cloudstack-common/scripts/vm/hypervisor/xenserver/vhd-util ] ; then
     echo Please download vhd-util from http://download.cloud.com.s3.amazonaws.com/tools/vhd-util and put it in 
     echo %{_datadir}/cloudstack-common/scripts/vm/hypervisor/xenserver/
+    #wget http://download.cloud.com.s3.amazonaws.com/tools/vhd-util
+    wget http://10.84.5.102/cloudstack/vhd-util
+    chmod +x vhd-util
+    mv vhd-util %{_datadir}/cloudstack-common/scripts/vm/hypervisor/xenserver/
 fi
 
 # change cloud user's home to 4.1+ version if needed. Would do this via 'usermod', but it

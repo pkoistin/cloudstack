@@ -177,7 +177,7 @@ public class ServiceInstanceModel extends ModelObjectBase {
         
         return si_obj;
     }
-
+    
     private void clearServicePolicy(ModelController controller) {
     	_left.addToNetworkPolicy(null);
     	_right.addToNetworkPolicy(null);
@@ -195,7 +195,7 @@ public class ServiceInstanceModel extends ModelObjectBase {
             s_logger.error("virtual-network update for policy delete: ", ex);
         }
     }
-
+    
     private NetworkPolicyModel setServicePolicy(ModelController controller) {
     	NetworkPolicyModel policyModel = new NetworkPolicyModel(UUID.randomUUID().toString(), _serviceInstance.getName());
     	policyModel.setProject((Project)_serviceInstance.getParent());
@@ -203,6 +203,7 @@ public class ServiceInstanceModel extends ModelObjectBase {
     	_right.addToNetworkPolicy(policyModel);
         List<String> siList = new ArrayList<String>();
         siList.add(StringUtils.join(_serviceInstance.getQualifiedName(), ':'));
+        
     	try {
             policyModel.build(controller.getManager().getModelController(), _leftName, _rightName, "in-network", siList, "pass");
         } catch (Exception e) {

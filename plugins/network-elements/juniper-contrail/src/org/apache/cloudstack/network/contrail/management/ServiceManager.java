@@ -37,4 +37,5 @@ public interface ServiceManager {
 
     public void startServiceInstance(long instanceId);
     public ServiceInstanceResponse createServiceInstanceResponse(long instanceId);
+    public boolean deleteServiceInstance(Long serviceInstanceId);
 }

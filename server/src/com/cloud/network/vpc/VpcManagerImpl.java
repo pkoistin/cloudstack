@@ -204,7 +204,7 @@ public class VpcManagerImpl extends ManagerBase implements VpcManager, VpcProvis
     private final ScheduledExecutorService _executor = Executors.newScheduledThreadPool(1, new NamedThreadFactory("VpcChecker"));
     private List<VpcProvider> vpcElements = null;
     private final List<Service> nonSupportedServices = Arrays.asList(Service.SecurityGroup, Service.Firewall);
-    private final List<Provider> supportedProviders = Arrays.asList(Provider.VPCVirtualRouter, Provider.NiciraNvp, Provider.InternalLbVm, Provider.Netscaler);
+    private final List<Provider> supportedProviders = Arrays.asList(Provider.VPCVirtualRouter, Provider.NiciraNvp, Provider.InternalLbVm, Provider.Netscaler, Provider.JuniperContrailVpcRouter, Provider.JuniperContrailLbRouter);
 
     int _cleanupInterval;
     int _maxNetworks;
@@ -312,6 +312,7 @@ public class VpcManagerImpl extends ManagerBase implements VpcManager, VpcProvis
         // Just here for 4.1, replaced by commit 836ce6c1 in newer versions
         Set<Network.Provider> sdnProviders = new HashSet<Network.Provider>();
         sdnProviders.add(Provider.NiciraNvp);
+        sdnProviders.add(Provider.JuniperContrailVpcRouter);
 
         boolean sourceNatSvc = false;
         boolean firewallSvs = false;
@@ -432,7 +433,7 @@ public class VpcManagerImpl extends ManagerBase implements VpcManager, VpcProvis
         List<VpcOfferingServiceMapVO> map = _vpcOffSvcMapDao.listByVpcOffId(vpcOffId);
 
         for (VpcOfferingServiceMapVO instance : map) {
-        	Service service = Service.getService(instance.getService());
+            Service service = Service.getService(instance.getService());
             Set<Provider> providers;
             providers = serviceProviderMap.get(service);
             if (providers == null) {
@@ -1105,7 +1106,8 @@ public class VpcManagerImpl extends ManagerBase implements VpcManager, VpcProvis
                     continue;
                 } else {
                     NetworkOffering otherOff = _entityMgr.findById(NetworkOffering.class, network.getNetworkOfferingId());
-                    if (_ntwkModel.areServicesSupportedInNetwork(network.getId(), Service.Lb) && otherOff.getPublicLb()) {
+                    if (_ntwkModel.areServicesSupportedInNetwork(network.getId(), Service.Lb) && otherOff.getPublicLb() &&
+                                   guestNtwkOff.getId() != otherOff.getId()) {
                         throw new InvalidParameterValueException("Public LB service is already supported " +
                                 "by network " + network + " in VPC " + vpc);
                     }
@@ -1227,6 +1229,7 @@ public class VpcManagerImpl extends ManagerBase implements VpcManager, VpcProvis
         if (vpcElements == null) {
             vpcElements = new ArrayList<VpcProvider>();
             vpcElements.add((VpcProvider)_ntwkModel.getElementImplementingProvider(Provider.VPCVirtualRouter.getName()));
+            vpcElements.add((VpcProvider)_ntwkModel.getElementImplementingProvider(Provider.JuniperContrailVpcRouter.getName()));
         }
 
         if (vpcElements == null) {
@@ -1563,7 +1566,6 @@ public class VpcManagerImpl extends ManagerBase implements VpcManager, VpcProvis
                     gatewayVO.setState(VpcGateway.State.Ready);
                     _vpcGatewayDao.update(gatewayVO.getId(), gatewayVO);
                     s_logger.debug("Marked gateway " + gatewayVO + " with state " + VpcGateway.State.Ready);
-
                     return false;
                 }
             }

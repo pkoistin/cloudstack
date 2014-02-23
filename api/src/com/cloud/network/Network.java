@@ -116,6 +116,8 @@ public interface Network extends ControlledEntity, StateObject<Network.State>, I
 
         public static final Provider VirtualRouter = new Provider("VirtualRouter", false);
         public static final Provider JuniperContrailRouter = new Provider("JuniperContrailRouter", false);
+        public static final Provider JuniperContrailVpcRouter = new Provider("JuniperContrailVpcRouter", false);
+        public static final Provider JuniperContrailLbRouter = new Provider("JuniperContrailLbRouter", false);
         public static final Provider JuniperSRX = new Provider("JuniperSRX", true);
         public static final Provider PaloAlto = new Provider("PaloAlto", true);
         public static final Provider F5BigIp = new Provider("F5BigIp", true);

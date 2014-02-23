@@ -21,6 +21,7 @@
                       http://www.springframework.org/schema/context
                       http://www.springframework.org/schema/context/spring-context-3.0.xsd">
     <import resource="commonContext.xml"/>
+
     <bean id="PublicNetworkTestConfiguration"
     	class="org.apache.cloudstack.network.contrail.management.PublicNetworkTestConfiguration"/>
 </beans>

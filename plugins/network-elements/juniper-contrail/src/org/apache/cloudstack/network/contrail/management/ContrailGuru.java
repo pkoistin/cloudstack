@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
-import javax.inject.Inject;
 import javax.ejb.Local;
+import javax.inject.Inject;
 
 import net.juniper.contrail.api.types.MacAddressesType;
 import net.juniper.contrail.api.types.VirtualMachineInterface;
@@ -81,11 +81,11 @@ public class ContrailGuru extends AdapterBase implements NetworkGuru {
     @Inject NetworkDao _networkDao;
     @Inject ContrailManager _manager;
     @Inject NicDao _nicDao;
-    @Inject PhysicalNetworkDao _physicalNetworkDao;
-    @Inject DataCenterDao _dcDao;
     @Inject IPAddressDao _ipAddressDao;
     @Inject AccountManager _accountMgr;
     @Inject IpAddressManager _ipAddrMgr;
+    @Inject PhysicalNetworkDao _physicalNetworkDao;
+    @Inject DataCenterDao _dcDao;
 
     private static final Logger s_logger = Logger.getLogger(ContrailGuru.class);
     private static final TrafficType[] _trafficTypes = {TrafficType.Guest};
@@ -95,11 +95,11 @@ public class ContrailGuru extends AdapterBase implements NetworkGuru {
                 && isMyTrafficType(offering.getTrafficType()) 
                 && offering.getGuestType() == Network.GuestType.Isolated
                 && physicalNetwork.getIsolationMethods().contains("L3VPN"))
-            return true;
+             return true;
 
-        return false;
-     }
- 
+         return false;
+    }
+
     @Override
     public String getName() {
 	return "ContrailGuru";
@@ -149,6 +149,25 @@ public class ContrailGuru extends AdapterBase implements NetworkGuru {
             return network;
         }
         _manager.getDatabase().getVirtualNetworks().add(vnModel);   
+
+        if (network.getVpcId() != null) {
+            List<IPAddressVO> ips = _ipAddressDao.listByAssociatedVpc(network.getVpcId(), true);
+            if (ips.isEmpty()) {
+                s_logger.debug("Creating a source nat ip for network " + network);
+                Account owner = _accountMgr.getAccount(network.getAccountId());
+                try {
+                    PublicIp publicIp = _ipAddrMgr.assignSourceNatIpAddressToGuestNetwork(owner, network);
+                    IPAddressVO ip = publicIp.ip();
+                    ip.setVpcId(network.getVpcId());
+                    _ipAddressDao.acquireInLockTable(ip.getId());
+                    _ipAddressDao.update(ip.getId(), ip);
+                    _ipAddressDao.releaseFromLockTable(ip.getId());
+                } catch (Exception e) {
+                    s_logger.error("Unable to allocate source nat ip: " + e);
+                }
+            }
+        }
+
         return network;
     }
 
@@ -178,7 +197,9 @@ public class ContrailGuru extends AdapterBase implements NetworkGuru {
         } catch (Exception e) {
             s_logger.warn("unable to instantiate broadcast URI: " + e);
         }
+
         profile.setBroadcastUri(broadcastUri);
+        
         return profile;
     }
 
