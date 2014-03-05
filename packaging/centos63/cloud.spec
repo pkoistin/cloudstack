@@ -111,6 +111,7 @@ The Apache CloudStack files shared between agent and management server
 
 %package agent
 Summary: CloudStack Agent for KVM hypervisors
+Requires: openssh-clients
 Requires: java >= 1.6.0
 Requires: %{name}-common = %{_ver}
 Requires: libvirt
@@ -125,6 +126,8 @@ Requires: jakarta-commons-daemon
 Requires: jakarta-commons-daemon-jsvc
 Requires: perl
 Requires: libvirt-python
+Requires: qemu-img
+Requires: qemu-kvm
 Provides: cloud-agent
 Obsoletes: cloud-agent < 4.1.0
 Obsoletes: cloud-agent-libs < 4.1.0
