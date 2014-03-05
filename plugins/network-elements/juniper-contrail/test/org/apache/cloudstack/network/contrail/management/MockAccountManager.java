@@ -53,7 +53,6 @@ import com.cloud.user.dao.AccountDao;
 import com.cloud.api.query.dao.AccountJoinDao;
 import com.cloud.configuration.dao.ResourceCountDao;
 import com.cloud.configuration.ResourceLimit;
-import com.cloud.api.query.vo.AccountJoinVO;
 import com.cloud.user.dao.UserDao;
 import com.cloud.utils.Pair;
 import com.cloud.utils.Ternary;
@@ -61,7 +60,6 @@ import com.cloud.utils.component.ManagerBase;
 import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
 
-import org.mockito.Mockito;
 
 public class MockAccountManager extends ManagerBase implements AccountManager {
     private static final Logger s_logger =

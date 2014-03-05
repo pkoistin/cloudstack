@@ -35,17 +35,22 @@ import org.apache.cloudstack.affinity.dao.AffinityGroupVMMapDaoImpl;
 import org.apache.cloudstack.api.IdentityService;
 import org.apache.cloudstack.engine.service.api.OrchestrationService;
 import org.apache.cloudstack.engine.subsystem.api.storage.DataStoreManager;
+import org.apache.cloudstack.engine.subsystem.api.storage.DataStoreProvider;
 import org.apache.cloudstack.engine.subsystem.api.storage.EndPointSelector;
 import org.apache.cloudstack.engine.subsystem.api.storage.StoragePoolAllocator;
 import org.apache.cloudstack.engine.subsystem.api.storage.TemplateDataFactory;
 import org.apache.cloudstack.engine.subsystem.api.storage.TemplateService;
 import org.apache.cloudstack.engine.subsystem.api.storage.VolumeDataFactory;
+import org.apache.cloudstack.engine.subsystem.api.storage.VolumeService;
 import org.apache.cloudstack.lb.dao.ApplicationLoadBalancerRuleDaoImpl;
 import org.apache.cloudstack.query.QueryService;
 import org.apache.cloudstack.region.PortableIpDaoImpl;
 import org.apache.cloudstack.region.PortableIpRangeDaoImpl;
 import org.apache.cloudstack.region.RegionManager;
 import org.apache.cloudstack.region.dao.RegionDaoImpl;
+import org.apache.cloudstack.spring.lifecycle.registry.ExtensionRegistry;
+import org.apache.cloudstack.storage.datastore.PrimaryDataStoreProviderManager;
+import org.apache.cloudstack.storage.image.datastore.ImageStoreProviderManager;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDaoImpl;
 import org.apache.cloudstack.storage.image.db.ImageStoreDaoImpl;
 import org.apache.cloudstack.storage.image.db.TemplateDataStoreDaoImpl;
@@ -106,6 +111,7 @@ import com.cloud.dc.DataCenter;
 import com.cloud.dc.dao.AccountVlanMapDaoImpl;
 import com.cloud.dc.dao.ClusterDaoImpl;
 import com.cloud.dc.dao.DataCenterDaoImpl;
+import com.cloud.dc.dao.DataCenterDetailsDaoImpl;
 import com.cloud.dc.dao.DataCenterIpAddressDaoImpl;
 import com.cloud.dc.dao.DataCenterLinkLocalIpAddressDaoImpl;
 import com.cloud.dc.dao.DataCenterVnetDaoImpl;
@@ -127,10 +133,10 @@ import com.cloud.host.dao.HostDaoImpl;
 import com.cloud.host.dao.HostDetailsDaoImpl;
 import com.cloud.host.dao.HostTagsDaoImpl;
 import com.cloud.hypervisor.HypervisorGuruManagerImpl;
+import com.cloud.hypervisor.XenServerGuru;
 import com.cloud.hypervisor.dao.HypervisorCapabilitiesDaoImpl;
 import com.cloud.network.ExternalDeviceUsageManager;
 import com.cloud.network.Ipv6AddressManagerImpl;
-import com.cloud.network.NetworkModelImpl;
 import com.cloud.network.NetworkServiceImpl;
 import com.cloud.network.NetworkUsageService;
 import com.cloud.network.StorageNetworkManager;
@@ -146,6 +152,7 @@ import com.cloud.network.as.dao.CounterDaoImpl;
 import com.cloud.network.dao.AccountGuestVlanMapDaoImpl;
 import com.cloud.network.dao.FirewallRulesCidrsDaoImpl;
 import com.cloud.network.dao.FirewallRulesDaoImpl;
+import com.cloud.network.dao.IPAddressDaoImpl;
 import com.cloud.network.dao.LBHealthCheckPolicyDaoImpl;
 import com.cloud.network.dao.LBStickinessPolicyDaoImpl;
 import com.cloud.network.dao.LoadBalancerDaoImpl;
@@ -167,12 +174,17 @@ import com.cloud.network.dao.Site2SiteVpnGatewayDaoImpl;
 import com.cloud.network.dao.UserIpv6AddressDaoImpl;
 import com.cloud.network.dao.VirtualRouterProviderDaoImpl;
 import com.cloud.network.dao.VpnUserDaoImpl;
+import com.cloud.network.element.FirewallServiceProvider;
+import com.cloud.network.element.NetworkACLServiceProvider;
+import com.cloud.network.element.PortForwardingServiceProvider;
 import com.cloud.network.element.Site2SiteVpnServiceProvider;
+import com.cloud.network.element.VpcProvider;
 import com.cloud.network.firewall.FirewallManagerImpl;
 import com.cloud.network.lb.LoadBalancingRulesManagerImpl;
 import com.cloud.network.router.VpcVirtualNetworkApplianceManagerImpl;
 import com.cloud.network.rules.RulesManagerImpl;
 import com.cloud.network.rules.dao.PortForwardingRulesDaoImpl;
+import com.cloud.network.security.SecurityGroupManagerImpl;
 import com.cloud.network.security.dao.SecurityGroupDaoImpl;
 import com.cloud.network.security.dao.SecurityGroupRuleDaoImpl;
 import com.cloud.network.security.dao.SecurityGroupRulesDaoImpl;
@@ -194,14 +206,12 @@ import com.cloud.network.vpc.dao.VpcServiceMapDaoImpl;
 import com.cloud.network.vpn.RemoteAccessVpnService;
 import com.cloud.network.vpn.Site2SiteVpnManager;
 import com.cloud.projects.dao.ProjectInvitationDaoImpl;
-import com.cloud.dc.DataCenter;
 import com.cloud.dc.dao.DataCenterDao;
 import com.cloud.offerings.dao.NetworkOfferingDaoImpl;
 import com.cloud.offerings.dao.NetworkOfferingDao;
 import com.cloud.offering.NetworkOffering;
 import com.cloud.offerings.dao.NetworkOfferingDetailsDaoImpl;
 import com.cloud.offerings.dao.NetworkOfferingServiceMapDaoImpl;
-import com.cloud.projects.ProjectManager;
 import com.cloud.projects.dao.ProjectAccountDaoImpl;
 import com.cloud.projects.ProjectManagerImpl;
 import com.cloud.projects.dao.ProjectDaoImpl;
@@ -220,7 +230,7 @@ import com.cloud.storage.StorageManager;
 import com.cloud.storage.dao.DiskOfferingDaoImpl;
 import com.cloud.storage.dao.GuestOSCategoryDaoImpl;
 import com.cloud.storage.dao.GuestOSDaoImpl;
-import com.cloud.storage.dao.LaunchPermissionDao;
+import com.cloud.storage.dao.LaunchPermissionDaoImpl;
 import com.cloud.storage.dao.SnapshotDaoImpl;
 import com.cloud.storage.dao.SnapshotPolicyDaoImpl;
 import com.cloud.storage.dao.StoragePoolDetailsDaoImpl;
@@ -242,7 +252,6 @@ import com.cloud.template.TemplateApiService;
 import com.cloud.template.TemplateManager;
 import com.cloud.user.Account;
 import com.cloud.user.dao.AccountDao;
-import com.cloud.user.AccountManager;
 import com.cloud.user.User;
 import com.cloud.user.UserVO;
 import com.cloud.user.dao.UserDao;
@@ -256,16 +265,18 @@ import com.cloud.user.dao.UserDaoImpl;
 import com.cloud.user.dao.UserStatisticsDaoImpl;
 import com.cloud.user.dao.UserStatsLogDaoImpl;
 import com.cloud.user.dao.VmDiskStatisticsDaoImpl;
-import com.cloud.utils.db.DB;
 import com.cloud.utils.db.Transaction;
 import com.cloud.utils.db.TransactionCallbackNoReturn;
 import com.cloud.utils.db.TransactionStatus;
 import com.cloud.uuididentity.dao.IdentityDaoImpl;
 import com.cloud.vm.ItWorkDaoImpl;
+import com.cloud.vm.UserVmManagerImpl;
+import com.cloud.vm.VirtualMachineManagerImpl;
 import com.cloud.vm.dao.ConsoleProxyDaoImpl;
 import com.cloud.vm.dao.DomainRouterDaoImpl;
 import com.cloud.vm.dao.InstanceGroupDaoImpl;
 import com.cloud.vm.dao.InstanceGroupVMMapDaoImpl;
+import com.cloud.vm.dao.NicDaoImpl;
 import com.cloud.vm.dao.NicIpAliasDaoImpl;
 import com.cloud.vm.dao.NicSecondaryIpDaoImpl;
 import com.cloud.vm.dao.SecondaryStorageVmDaoImpl;
@@ -278,6 +289,7 @@ import com.cloud.vm.snapshot.dao.VMSnapshotDaoImpl;
 
 import org.apache.cloudstack.framework.jobs.impl.AsyncJobManagerImpl;
 import org.apache.cloudstack.framework.jobs.dao.AsyncJobDaoImpl;
+import org.apache.cloudstack.engine.orchestration.NetworkOrchestrator;
 import org.apache.cloudstack.engine.orchestration.service.VolumeOrchestrationService;
 
 import com.cloud.network.IpAddressManagerImpl;
@@ -296,13 +308,16 @@ import org.apache.cloudstack.network.lb.ApplicationLoadBalancerService;
 
 import com.cloud.utils.db.EntityManager;
 
+import org.apache.cloudstack.network.element.InternalLoadBalancerElement;
 import org.apache.cloudstack.context.CallContext;
+
 import org.apache.cloudstack.network.contrail.management.ContrailElementImpl;
 import org.apache.cloudstack.network.contrail.management.ContrailGuru;
 import org.apache.cloudstack.network.contrail.management.ContrailManagerImpl;
 import org.apache.cloudstack.network.contrail.management.EventUtils;
 import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
 
+import org.apache.cloudstack.network.contrail.management.MockAccountManager;
 
 @ComponentScan(basePackageClasses={
         AccountDaoImpl.class,
@@ -339,6 +354,7 @@ import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
         ContrailManagerImpl.class,
         CounterDaoImpl.class,
         DataCenterDaoImpl.class,
+        DataCenterDetailsDaoImpl.class,
         DataCenterIpAddressDaoImpl.class,
         DataCenterJoinDaoImpl.class,
         DataCenterLinkLocalIpAddressDaoImpl.class,
@@ -354,7 +370,7 @@ import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
         EventDaoImpl.class,
         EventJoinDaoImpl.class,
         EventUtils.class,
-        EventUtils.class,
+        ExtensionRegistry.class,
         FirewallManagerImpl.class,
         FirewallRulesCidrsDaoImpl.class,
         FirewallRulesDaoImpl.class,
@@ -368,18 +384,20 @@ import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
         HostTransferMapDaoImpl.class,
         HypervisorCapabilitiesDaoImpl.class,
         HypervisorGuruManagerImpl.class,
+        IPAddressDaoImpl.class,
         IdentityDaoImpl.class,
         ImageStoreDaoImpl.class,
         ImageStoreJoinDaoImpl.class,
         InstanceGroupDaoImpl.class,
         InstanceGroupJoinDaoImpl.class,
         InstanceGroupVMMapDaoImpl.class,
+        InternalLoadBalancerElement.class,
         IpAddressManagerImpl.class,
         Ipv6AddressManagerImpl.class,
         ItWorkDaoImpl.class,
         LBHealthCheckPolicyDaoImpl.class,
         LBStickinessPolicyDaoImpl.class,
-        LaunchPermissionDao.class,
+        LaunchPermissionDaoImpl.class,
         LoadBalancerDaoImpl.class,
         LoadBalancerVMMapDaoImpl.class,
         LoadBalancingRulesManagerImpl.class,
@@ -391,14 +409,15 @@ import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
         NetworkAccountDaoImpl.class,
         NetworkDaoImpl.class,
         NetworkDomainDaoImpl.class,
-        NetworkModelImpl.class,
         NetworkOfferingDaoImpl.class,
         NetworkOfferingDetailsDaoImpl.class,
         NetworkOfferingServiceMapDaoImpl.class,
         NetworkOpDaoImpl.class,
+        NetworkOrchestrator.class,
         NetworkRuleConfigDaoImpl.class,
         NetworkServiceImpl.class,
         NetworkServiceMapDaoImpl.class,
+        NicDaoImpl.class,
         NicIpAliasDaoImpl.class,
         NicSecondaryIpDaoImpl.class,
         PhysicalNetworkDaoImpl.class,
@@ -432,6 +451,7 @@ import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
         SecondaryStorageVmDaoImpl.class,
         SecurityGroupDaoImpl.class,
         SecurityGroupJoinDaoImpl.class,
+        SecurityGroupManagerImpl.class,
         SecurityGroupRuleDaoImpl.class,
         SecurityGroupRulesDaoImpl.class,
         SecurityGroupVMMapDaoImpl.class,
@@ -464,12 +484,14 @@ import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
         UserVmDaoImpl.class,
         UserVmDetailsDaoImpl.class,
         UserVmJoinDaoImpl.class,
+        UserVmManagerImpl.class,
         VMInstanceDaoImpl.class,
         VMSnapshotDaoImpl.class,
         VMTemplateDaoImpl.class,
         VMTemplateDetailsDaoImpl.class,
         VMTemplateHostDaoImpl.class,
         VMTemplateZoneDaoImpl.class,
+        VirtualMachineManagerImpl.class,
         VirtualRouterProviderDaoImpl.class,
         VlanDaoImpl.class,
         VmDiskStatisticsDaoImpl.class,
@@ -484,7 +506,8 @@ import org.apache.cloudstack.network.contrail.management.ServerEventHandlerImpl;
         VpcOfferingServiceMapDaoImpl.class,
         VpcServiceMapDaoImpl.class,
         VpcVirtualNetworkApplianceManagerImpl.class,
-        VpnUserDaoImpl.class
+        VpnUserDaoImpl.class,
+        XenServerGuru.class
 },
 includeFilters={@Filter(value=IntegrationTestConfiguration.ComponentFilter.class, type=FilterType.CUSTOM)},
 useDefaultFilters=false)
@@ -831,5 +854,36 @@ public class IntegrationTestConfiguration {
     public VolumeOrchestrationService volumeOrchestrationService() {
         return Mockito.mock(VolumeOrchestrationService.class);
     }
-
+    @Bean
+    public FirewallServiceProvider firewallServiceProvider() {
+        return Mockito.mock(FirewallServiceProvider.class);
+    }
+    @Bean
+    public PortForwardingServiceProvider portForwardingServiceProvider() {
+        return Mockito.mock(PortForwardingServiceProvider.class);
+    }
+    @Bean
+    public NetworkACLServiceProvider networkACLServiceProvider() {
+        return Mockito.mock(NetworkACLServiceProvider.class);
+    }
+    @Bean
+    public VpcProvider vpcProvier() {
+        return Mockito.mock(VpcProvider.class);
+    }
+    @Bean
+    public VolumeService volumeService() {
+        return Mockito.mock(VolumeService.class);
+    }
+    @Bean
+    public PrimaryDataStoreProviderManager privateDataStoreProviderManager() {
+        return Mockito.mock(PrimaryDataStoreProviderManager.class);
+    }
+    @Bean
+    public ImageStoreProviderManager imageStoreProviderManager() {
+        return Mockito.mock(ImageStoreProviderManager.class);
+    }
+    @Bean
+    public DataStoreProvider dataStoreProvider() {
+        return Mockito.mock(DataStoreProvider.class);
+    }
 }

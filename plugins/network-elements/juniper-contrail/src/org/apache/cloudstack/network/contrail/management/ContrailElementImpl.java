@@ -26,7 +26,6 @@ import java.util.Set;
 
 import javax.ejb.Local;
 import javax.inject.Inject;
-import javax.naming.ConfigurationException;
 
 import org.apache.cloudstack.network.contrail.api.command.CreateServiceInstanceCmd;
 import org.apache.cloudstack.network.contrail.model.InstanceIpModel;
@@ -40,6 +39,7 @@ import com.cloud.deploy.DeployDestination;
 import com.cloud.exception.ConcurrentOperationException;
 import com.cloud.exception.InsufficientCapacityException;
 import com.cloud.exception.ResourceUnavailableException;
+import com.cloud.resource.ResourceManager;
 import com.cloud.network.Network;
 import com.cloud.network.Network.Capability;
 import com.cloud.network.Network.Provider;
@@ -49,18 +49,15 @@ import com.cloud.network.PhysicalNetworkServiceProvider;
 import com.cloud.network.PublicIpAddress;
 import com.cloud.network.element.DhcpServiceProvider;
 import com.cloud.network.element.IpDeployer;
-import com.cloud.network.element.NetworkACLServiceProvider;
 import com.cloud.network.element.SourceNatServiceProvider;
 import com.cloud.network.element.StaticNatServiceProvider;
 import com.cloud.network.rules.StaticNat;
-import com.cloud.network.vpc.NetworkACLItem;
 import com.cloud.offering.NetworkOffering;
 import com.cloud.utils.component.AdapterBase;
 import com.cloud.vm.NicProfile;
 import com.cloud.vm.NicVO;
 import com.cloud.vm.ReservationContext;
 import com.cloud.vm.VMInstanceVO;
-import com.cloud.vm.VirtualMachine;
 import com.cloud.vm.VirtualMachineProfile;
 import com.cloud.vm.dao.NicDao;
 import com.cloud.network.IpAddress;
@@ -86,12 +83,6 @@ public class ContrailElementImpl extends AdapterBase
 	private static final Logger s_logger =
 			Logger.getLogger(ContrailElement.class);
 	
-    @Override
-    public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
-    	s_logger.debug("configure");
-    	return true;
-    }
-
     // PluggableService
     @Override
     public List<Class<?>> getCommands() {
