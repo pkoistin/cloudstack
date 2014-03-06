@@ -141,6 +141,9 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
 
     @Override
     public boolean start() {
+        if (_api == null) {
+            return true;
+        }
         /* Start background task */
         _dbSyncTimer = new Timer("DBSyncTimer");
         try {
@@ -246,8 +249,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
             String hostname = null;
             int port = 0;
             if (configFile == null) {
-                hostname = "localhost";
-                port = 8082;
+                return false;
             } else {
                 final Properties configProps = new Properties();
                 configProps.load(new FileInputStream(configFile));
