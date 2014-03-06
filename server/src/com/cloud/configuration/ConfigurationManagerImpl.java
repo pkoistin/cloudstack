@@ -4530,8 +4530,8 @@ ConfigurationManagerImpl extends ManagerBase implements ConfigurationManager, Co
 
     @Override
     public boolean isOfferingForVpc(NetworkOffering offering) {
-        boolean vpcProvider = _ntwkOffServiceMapDao.isProviderForNetworkOffering(offering.getId(),
-                Provider.VPCVirtualRouter);
+        boolean vpcProvider = _ntwkOffServiceMapDao.isProviderForNetworkOffering(offering.getId(), Provider.VPCVirtualRouter) ||
+                              _ntwkOffServiceMapDao.isProviderForNetworkOffering(offering.getId(), Provider.JuniperContrailVpcRouter);
         return vpcProvider;
     }
 
