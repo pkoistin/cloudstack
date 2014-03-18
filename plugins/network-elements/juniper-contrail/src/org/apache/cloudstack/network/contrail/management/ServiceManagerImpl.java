@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.net.URI;
 
 import javax.ejb.Local;
 import javax.inject.Inject;
@@ -40,6 +41,8 @@ import com.cloud.exception.ResourceUnavailableException;
 import com.cloud.exception.AgentUnavailableException;
 import com.cloud.exception.OperationTimedoutException;
 import com.cloud.exception.ConcurrentOperationException;
+import com.cloud.network.addr.PublicIp;
+import com.cloud.network.IpAddressManager;
 import com.cloud.network.Network;
 import com.cloud.network.NetworkModel;
 import com.cloud.network.Networks.TrafficType;
@@ -55,6 +58,7 @@ import com.cloud.user.UserVO;
 import com.cloud.user.dao.UserDao;
 import com.cloud.utils.Pair;
 import com.cloud.utils.exception.CloudRuntimeException;
+import com.cloud.utils.net.NetUtils;
 import com.cloud.vm.NicProfile;
 import com.cloud.vm.UserVmVO;
 import com.cloud.vm.VirtualMachineManager;
@@ -82,6 +86,7 @@ public class ServiceManagerImpl implements ServiceManager {
     @Inject NetworkModel _networkModel;
     @Inject AccountService _accountService;
     @Inject ContrailManager _manager;
+    @Inject IpAddressManager _ipAddrMgr;
     
     /**
      * In the case of service instance the master object is in the contrail API server. This object stores the
@@ -113,7 +118,31 @@ public class ServiceManagerImpl implements ServiceManager {
                 TrafficType.Management);
         networks.put(linklocal, null);
         networks.put((NetworkVO) left, null);
-        networks.put((NetworkVO) right, null);
+
+        NicProfile rightNic = new NicProfile();
+        PublicIp sourceNatIp;
+        try {
+            sourceNatIp = _ipAddrMgr.assignSourceNatIpAddressToGuestNetwork(owner, left);
+            s_logger.debug("sourceNatIp() =  " + sourceNatIp.getAddress().addr());
+        } catch (InsufficientCapacityException ex) {
+            throw new CloudRuntimeException("Insufficient capacity", ex);
+        }
+        rightNic.setDefaultNic(true);
+        rightNic.setIp4Address(sourceNatIp.getAddress().addr());
+        rightNic.setGateway(sourceNatIp.getGateway());
+        rightNic.setNetmask(sourceNatIp.getNetmask());
+        rightNic.setMacAddress(sourceNatIp.getMacAddress());
+
+        URI broadcastUri = null;
+        try {
+            broadcastUri = new URI("vlan://untagged");
+        } catch (Exception e) {
+            s_logger.warn("unable to instantiate broadcast URI: " + e);
+        }
+
+        rightNic.setBroadcastUri(broadcastUri);
+        rightNic.setBroadcastType(right.getBroadcastDomainType());
+        networks.put((NetworkVO) right, rightNic);
         
         String instanceName = VirtualMachineName.getVmName(id, owner.getId(), "SRV");
         ServiceVirtualMachine svm = new ServiceVirtualMachine(id, instanceName, name, template.getId(),

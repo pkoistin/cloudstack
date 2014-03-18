@@ -40,6 +40,10 @@
 	class="org.apache.cloudstack.network.contrail.management.ContrailLBElementImpl">
     <property name="name" value="ContrailLBElement"/>
   </bean>
+  <bean id="ContrailVSrxElement"
+  	class="org.apache.cloudstack.network.contrail.management.ContrailVSrxElementImpl">
+    <property name="name" value="ContrailVSrxElement"/>
+ </bean>
 
   <bean id="ContrailGuru"
 	class="org.apache.cloudstack.network.contrail.management.ContrailGuru">

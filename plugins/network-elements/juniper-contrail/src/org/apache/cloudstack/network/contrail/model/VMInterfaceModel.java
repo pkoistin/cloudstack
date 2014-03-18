@@ -166,6 +166,7 @@ public class VMInterfaceModel extends ModelObjectBase {
         switch (network.getState()) {
         case Implemented:
         case Setup:
+        case Implementing:
             _netActive = true;
             break;
         default:
