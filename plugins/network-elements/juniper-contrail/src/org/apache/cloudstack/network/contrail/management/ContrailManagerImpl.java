@@ -240,7 +240,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
             if (svc == Service.Lb) {
                 if(offeringName.equals(vpcRouterOfferingName)) {
                     Set<Provider> lbProviderSet = new HashSet<Provider>();
-                    lbProviderSet.add(Provider.JuniperContrailLbRouter);
+                    lbProviderSet.add(Provider.InternalLbVm);
                     serviceProviderMap.put(svc, lbProviderSet);
                 }
                 continue;
@@ -296,7 +296,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
         for (String svc: services) {
             if (svc.equals(Service.Lb.getName())) {
                 List<String> lbProviderSet = new ArrayList<String>();
-                lbProviderSet.add(Provider.JuniperContrailLbRouter.getName());
+                lbProviderSet.add(Provider.InternalLbVm.getName());
                 serviceProviderMap.put(svc, lbProviderSet);
                 continue;
             }
@@ -564,7 +564,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
         for (PhysicalNetworkVO phys : net_list) {
             if(_physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailRouter.getName()) != null ||
                _physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailVpcRouter.getName()) != null || 
-               _physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailLbRouter.getName()) != null) {
+               _physProviderDao.findByServiceProvider(phys.getId(), Provider.InternalLbVm.getName()) != null) {
                 return true;
             }  
         }
