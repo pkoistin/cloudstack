@@ -241,7 +241,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
                 if(offeringName.equals(vpcRouterOfferingName)) {
                     Set<Provider> lbProviderSet = new HashSet<Provider>();
                     lbProviderSet.add(Provider.InternalLbVm);
-                    lbProviderSet.add(Provider.VirtualRouter);
+                    //lbProviderSet.add(Provider.VirtualRouter);
                     serviceProviderMap.put(svc, lbProviderSet);
                 }
                 continue;
@@ -257,7 +257,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
         voffer.setState(NetworkOffering.State.Enabled);
         if (offeringName.equals(vpcRouterOfferingName)) {
             voffer.setInternalLb(true);
-            voffer.setPublicLb(true);
+            //voffer.setPublicLb(true);
         }
         long id = voffer.getId();
         TransactionLegacy txn = TransactionLegacy.currentTxn();
@@ -299,7 +299,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
             if (svc.equals(Service.Lb.getName())) {
                 List<String> lbProviderSet = new ArrayList<String>();
                 lbProviderSet.add(Provider.InternalLbVm.getName());
-                lbProviderSet.add(Provider.VirtualRouter.getName());
+                //lbProviderSet.add(Provider.VirtualRouter.getName());
                 serviceProviderMap.put(svc, lbProviderSet);
                 continue;
             }
@@ -567,7 +567,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
         for (PhysicalNetworkVO phys : net_list) {
             if(_physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailRouter.getName()) != null ||
                _physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailVpcRouter.getName()) != null || 
-               _physProviderDao.findByServiceProvider(phys.getId(), Provider.VirtualRouter.getName()) != null ||
+               //_physProviderDao.findByServiceProvider(phys.getId(), Provider.VirtualRouter.getName()) != null ||
                _physProviderDao.findByServiceProvider(phys.getId(), Provider.InternalLbVm.getName()) != null) {
                 return true;
             }  
