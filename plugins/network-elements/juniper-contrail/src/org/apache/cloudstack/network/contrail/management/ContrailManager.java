@@ -46,8 +46,10 @@ public interface ContrailManager {
     public static final String routerOfferingDisplayText = "Juniper Contrail Network Offering";
     public static final String routerPublicOfferingName = "Juniper Contrail Public Network Offering";
     public static final String routerPublicOfferingDisplayText = "Juniper Contrail Public Network Offering";
-    public static final String vpcRouterOfferingName = "Juniper Contrail VPC Network Offering";
-    public static final String vpcRouterOfferingDisplayText = "Juniper Contrail VPC Network Offering";
+    public static final String vpcRouterOfferingName = "Juniper Contrail VPC Network Offering with Internal LB support";
+    public static final String vpcRouterOfferingDisplayText = "Juniper Contrail VPC Network Offering with Internal LB support";
+    public static final String vpcPublicLbRouterOfferingName = "Juniper Contrail VPC Network Offering with Public LB support";
+    public static final String vpcPublicLbRouterOfferingDisplayText = "Juniper Contrail VPC Network Offering with Public LB support";
     public static final String juniperVPCOfferingName = "Juniper Contrail VPC Offering";
     public static final String juniperVPCOfferingDisplayText = "Juniper Contrail VPC Offering";
     public static final int DB_SYNC_INTERVAL_DEFAULT = 600000;
@@ -58,6 +60,7 @@ public interface ContrailManager {
     public NetworkOffering getRouterOffering();
     public NetworkOffering getPublicRouterOffering();
     public NetworkOffering getVpcRouterOffering();
+    public NetworkOffering getVpcPublicLbRouterOffering();
     public VpcOffering getVpcOffering();
     public void syncNetworkDB(short syncMode) throws Exception;
 

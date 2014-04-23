@@ -140,6 +140,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
     private NetworkOffering _routerOffering;
     private NetworkOffering _routerPublicOffering;
     private NetworkOffering _vpcRouterOffering;
+    private NetworkOffering _vpcPublicLbRouterOffering;
     private VpcOffering _vpcOffering;
     private Timer _dbSyncTimer;
     private int   _dbSyncInterval = DB_SYNC_INTERVAL_DEFAULT;
@@ -241,7 +242,10 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
                 if(offeringName.equals(vpcRouterOfferingName)) {
                     Set<Provider> lbProviderSet = new HashSet<Provider>();
                     lbProviderSet.add(Provider.InternalLbVm);
-                    //lbProviderSet.add(Provider.VirtualRouter);
+                    serviceProviderMap.put(svc, lbProviderSet);
+                } else if(offeringName.equals(vpcPublicLbRouterOfferingName)) {
+                    Set<Provider> lbProviderSet = new HashSet<Provider>();
+                    lbProviderSet.add(Provider.VirtualRouter);
                     serviceProviderMap.put(svc, lbProviderSet);
                 }
                 continue;
@@ -257,7 +261,8 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
         voffer.setState(NetworkOffering.State.Enabled);
         if (offeringName.equals(vpcRouterOfferingName)) {
             voffer.setInternalLb(true);
-            //voffer.setPublicLb(true);
+        } else if (offeringName.equals(vpcPublicLbRouterOfferingName)) {
+            voffer.setPublicLb(true);
         }
         long id = voffer.getId();
         TransactionLegacy txn = TransactionLegacy.currentTxn();
@@ -299,7 +304,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
             if (svc.equals(Service.Lb.getName())) {
                 List<String> lbProviderSet = new ArrayList<String>();
                 lbProviderSet.add(Provider.InternalLbVm.getName());
-                //lbProviderSet.add(Provider.VirtualRouter.getName());
+                lbProviderSet.add(Provider.VirtualRouter.getName());
                 serviceProviderMap.put(svc, lbProviderSet);
                 continue;
             }
@@ -367,6 +372,8 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
 
         _vpcRouterOffering = LocateNetworkOffering(vpcRouterOfferingName, vpcRouterOfferingDisplayText, 
                                                                   Provider.JuniperContrailVpcRouter);
+        _vpcPublicLbRouterOffering = LocateNetworkOffering(vpcPublicLbRouterOfferingName, vpcPublicLbRouterOfferingDisplayText, 
+                                                                  Provider.JuniperContrailVpcRouter);
         _vpcOffering = LocateVpcOffering();
 
         } catch (Exception ex) {
@@ -394,6 +401,11 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
     @Override
     public NetworkOffering getVpcRouterOffering() {
         return _vpcRouterOffering;
+    }
+
+    @Override
+    public NetworkOffering getVpcPublicLbRouterOffering() {
+        return _vpcPublicLbRouterOffering;
     }
 
     @Override
@@ -567,7 +579,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
         for (PhysicalNetworkVO phys : net_list) {
             if(_physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailRouter.getName()) != null ||
                _physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailVpcRouter.getName()) != null || 
-               //_physProviderDao.findByServiceProvider(phys.getId(), Provider.VirtualRouter.getName()) != null ||
+               _physProviderDao.findByServiceProvider(phys.getId(), Provider.VirtualRouter.getName()) != null ||
                _physProviderDao.findByServiceProvider(phys.getId(), Provider.InternalLbVm.getName()) != null) {
                 return true;
             }  
