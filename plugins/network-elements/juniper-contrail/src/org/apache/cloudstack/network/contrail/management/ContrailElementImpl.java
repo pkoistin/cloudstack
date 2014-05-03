@@ -236,6 +236,14 @@ public class ContrailElementImpl extends AdapterBase
 	        s_logger.debug("vm " + vm.getInstanceName() + " not in local database");
 	        return true;
 	    }
+
+        VirtualNetworkModel vnModel = _manager.getDatabase().lookupVirtualNetwork(network.getUuid(),
+                        _manager.getCanonicalName(network), network.getTrafficType());
+        if (vnModel == null) {
+            s_logger.debug("vn not in local database");
+            return true;
+        }
+
 	    VMInterfaceModel vmiModel = vmModel.getVMInterface(nic.getUuid());
 	    if (vmiModel != null) {
 	        try {
@@ -244,6 +252,7 @@ public class ContrailElementImpl extends AdapterBase
 	            s_logger.warn("virtual-machine-interface delete", ex);
 	        }
 	        vmModel.removeSuccessor(vmiModel);
+            vnModel.removeSuccessor(vmiModel);
 	    }
 
 	    if (!vmModel.hasDescendents()) {

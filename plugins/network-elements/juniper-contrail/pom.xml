@@ -29,7 +29,7 @@
   <repositories>
     <repository>
       <id>juniper-contrail</id>
-      <url>http://juniper.github.io/contrail-maven/snapshots</url>
+      <url>http://juniper.github.io/contrail-maven/releases</url>
     </repository>
   </repositories>
 
@@ -95,7 +95,7 @@
     <dependency>
       <groupId>net.juniper.contrail</groupId>
       <artifactId>juniper-contrail-api</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>1.0</version>
     </dependency>
     <dependency>
       <groupId>mysql</groupId>
