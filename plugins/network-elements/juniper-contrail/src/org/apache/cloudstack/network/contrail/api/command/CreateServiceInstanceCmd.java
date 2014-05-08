@@ -145,7 +145,7 @@ public class CreateServiceInstanceCmd extends BaseAsyncCreateCmd {
 
     @Override
     public String getEventType() {
-        return EventTypes.EVENT_VM_CREATE;
+        return EventTypes.EVENT_SERVICE_INSTANCE_VM_CREATE;
     }
 
     @Override
