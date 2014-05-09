@@ -43,6 +43,7 @@ import com.cloud.exception.InsufficientCapacityException;
 import com.cloud.exception.ResourceUnavailableException;
 import com.cloud.utils.exception.CloudRuntimeException;
 import org.apache.cloudstack.api.ServerApiException;
+import com.cloud.hypervisor.Hypervisor.HypervisorType;
 import com.cloud.network.Network;
 import com.cloud.network.Network.Capability;
 import com.cloud.network.Network.Provider;
@@ -88,22 +89,22 @@ import org.apache.cloudstack.api.ApiErrorCode;
 public class ContrailVSrxElementImpl extends AdapterBase
         implements SourceNatServiceProvider, IpDeployer, NetworkElement {
 
-	private static final Map<Service, Map<Capability, String>> _capabilities = InitCapabilities();
+    private static final Map<Service, Map<Capability, String>> _capabilities = InitCapabilities();
 
         @Inject ResourceManager _resourceMgr;
         @Inject ConfigurationServer _configServer;
         @Inject NetworkDao _networksDao;
-	@Inject ContrailManager _manager;
-	@Inject NicDao _nicDao;
-	@Inject ServerDBSync  _dbSync;
-	@Inject ServiceManager _vrouterService;
-	@Inject EntityManager _entityMgr;  // ???
-	@Inject VMTemplateDao _tmpltDao;
-	@Inject ServiceOfferingDao _serviceOfferingDao;
+    @Inject ContrailManager _manager;
+    @Inject NicDao _nicDao;
+    @Inject ServerDBSync  _dbSync;
+    @Inject ServiceManager _vrouterService;
+    @Inject EntityManager _entityMgr;  // ???
+    @Inject VMTemplateDao _tmpltDao;
+    @Inject ServiceOfferingDao _serviceOfferingDao;
 
-	private static final Logger s_logger =
-			Logger.getLogger(ContrailVSrxElementImpl.class);
-	
+    private static final Logger s_logger =
+            Logger.getLogger(ContrailVSrxElementImpl.class);
+    
     // NetworkElement API
     @Override
     public Provider getProvider() {
@@ -111,151 +112,161 @@ public class ContrailVSrxElementImpl extends AdapterBase
     }
 
     private static Map<Service, Map<Capability, String>> InitCapabilities() {
-    	Map<Service, Map<Capability, String>> capabilities = new HashMap<Service, Map<Capability, String>>();
-		Map<Capability, String> sourceNatCapabilities = new HashMap<Capability, String>();
-		sourceNatCapabilities.put(Capability.SupportedSourceNatTypes, "peraccount");
-		sourceNatCapabilities.put(Capability.RedundantRouter, "false");
-		capabilities.put(Service.SourceNat, sourceNatCapabilities);
+        Map<Service, Map<Capability, String>> capabilities = new HashMap<Service, Map<Capability, String>>();
+        Map<Capability, String> sourceNatCapabilities = new HashMap<Capability, String>();
+        sourceNatCapabilities.put(Capability.SupportedSourceNatTypes, "peraccount");
+        sourceNatCapabilities.put(Capability.RedundantRouter, "false");
+        capabilities.put(Service.SourceNat, sourceNatCapabilities);
 
-    	return capabilities;
+        return capabilities;
     }
 
-	@Override
-	public Map<Service, Map<Capability, String>> getCapabilities() {
-		return _capabilities;
-	}
+    @Override
+    public Map<Service, Map<Capability, String>> getCapabilities() {
+        return _capabilities;
+    }
 
-	/**
-	 * Network add/update.
-	 */
-	@Override
-	public boolean implement(Network network, NetworkOffering offering,
-			DeployDestination dest, ReservationContext context)
-			throws ConcurrentOperationException, ResourceUnavailableException,
-			InsufficientCapacityException {
-	    s_logger.debug("ContrailVSrxElement implement: " + network.getName() + ", traffic type: " + network.getTrafficType());
+    /**
+     * Network add/update.
+     */
+    @Override
+    public boolean implement(Network network, NetworkOffering offering,
+            DeployDestination dest, ReservationContext context)
+            throws ConcurrentOperationException, ResourceUnavailableException,
+            InsufficientCapacityException {
+        s_logger.debug("ContrailVSrxElement implement: " + network.getName() + ", traffic type: " + network.getTrafficType());
 
-		Account owner = _entityMgr.findById(Account.class, network.getAccountId());
-		DataCenter zone = dest.getDataCenter();
-		List<ServiceOfferingVO> service_offering_list = _serviceOfferingDao.findPublicServiceOfferings();
-		//List<ServiceOfferingVO> service_offering_list = _serviceOfferingDao.findSystemOffering(owner.getDomainId(), true, "domainrouter");
-		if (service_offering_list.isEmpty()) {
-			throw new CloudRuntimeException("public service_offering list is empty");
-		}
-		
+        Account owner = _entityMgr.findById(Account.class, network.getAccountId());
+        DataCenter zone = dest.getDataCenter();
+        List<ServiceOfferingVO> service_offering_list = _serviceOfferingDao.findPublicServiceOfferings();
+        //List<ServiceOfferingVO> service_offering_list = _serviceOfferingDao.findSystemOffering(owner.getDomainId(), true, "domainrouter");
+        if (service_offering_list.isEmpty()) {
+            throw new CloudRuntimeException("public service_offering list is empty");
+        }
+        
         ServiceOfferingVO vsrx_compute_offering = null;
         for (ServiceOfferingVO service_offering:service_offering_list) {
             if (service_offering.getRamSize() < 2048 || service_offering.getCpu() < 2)
                 continue;
             else {
-	            vsrx_compute_offering = service_offering;
+                vsrx_compute_offering = service_offering;
                 break;
             }
         }
 
-		if (vsrx_compute_offering == null ) {
-			throw new CloudRuntimeException("No suitable service/compute offering for vSRX found");
-		}
-		
-		VMTemplateVO tmplt = _tmpltDao.findByTemplateName("Juniper vSRX");
-		VirtualMachineTemplate template = _entityMgr.findById(VirtualMachineTemplate.class, tmplt.getId());
-		String name = network.getName();
-		List<? extends Network> networks = _networksDao.listByZoneAndTrafficType(zone.getId(), TrafficType.Public);
-		if (networks.isEmpty() || networks.size() > 1) {
-				throw new CloudRuntimeException("Can't find public network in the zone specified");
-		}
-		Network public_network = networks.get(0);
-		if (template == null) {
-				throw new CloudRuntimeException("template is null");
-		}
+        if (vsrx_compute_offering == null ) {
+            throw new CloudRuntimeException("No suitable service/compute offering for vSRX found");
+        }
+        
+        VMTemplateVO tmplt = _tmpltDao.findByTemplateName("Juniper vSRX");
+        if (tmplt == null) {
+            throw new CloudRuntimeException("No Juniper vSRX template available");
+        }
+
+        // Revisit the logic when contrail will support KVM on cloudstack.
+        // For now only XenServer support available. Also ensure that template is Active
+        if (tmplt.getHypervisorType() != HypervisorType.XenServer || tmplt.getState() != VirtualMachineTemplate.State.Active) {
+            throw new CloudRuntimeException("Juniper vSRX template is not for XenServer or isn't in Active State");
+        }
+
+        VirtualMachineTemplate template = _entityMgr.findById(VirtualMachineTemplate.class, tmplt.getId());
+        String name = network.getName();
+        List<? extends Network> networks = _networksDao.listByZoneAndTrafficType(zone.getId(), TrafficType.Public);
+        if (networks.isEmpty() || networks.size() > 1) {
+                throw new CloudRuntimeException("Can't find public network in the zone specified");
+        }
+        Network public_network = networks.get(0);
+        if (template == null) {
+                throw new CloudRuntimeException("template is null");
+        }
 
         ServiceVirtualMachine svm = _vrouterService.createServiceInstance(zone, 
-						                                                  owner, template, vsrx_compute_offering,
+                                                                          owner, template, vsrx_compute_offering,
                                                                               name, network, public_network);
         if (svm == null) {
             throw new ServerApiException(ApiErrorCode.INTERNAL_ERROR, "Unable to create service instance");
         }
         _vrouterService.startServiceInstance(svm.getId());
 
-	    return true;
-	}
+        return true;
+    }
 
-	@Override
-	public boolean prepare(Network network, NicProfile nicProfile,
-			VirtualMachineProfile vm,
-			DeployDestination dest, ReservationContext context)
-			throws ConcurrentOperationException, ResourceUnavailableException,
-			InsufficientCapacityException {
+    @Override
+    public boolean prepare(Network network, NicProfile nicProfile,
+            VirtualMachineProfile vm,
+            DeployDestination dest, ReservationContext context)
+            throws ConcurrentOperationException, ResourceUnavailableException,
+            InsufficientCapacityException {
 
-	    s_logger.debug("ContrailVSrxElement prepare: " + network.getName() + ", traffic type: " + network.getTrafficType());
+        s_logger.debug("ContrailVSrxElement prepare: " + network.getName() + ", traffic type: " + network.getTrafficType());
 
-	    return true;
-	}
+        return true;
+    }
 
-	@Override
-	public boolean release(Network network, NicProfile nicProfile,
-			VirtualMachineProfile vm,
-			ReservationContext context) throws ConcurrentOperationException,
-			ResourceUnavailableException {
-	    s_logger.debug("ContrailVSrxElement release: " + network.getName() + ", traffic type: " + network.getTrafficType());
+    @Override
+    public boolean release(Network network, NicProfile nicProfile,
+            VirtualMachineProfile vm,
+            ReservationContext context) throws ConcurrentOperationException,
+            ResourceUnavailableException {
+        s_logger.debug("ContrailVSrxElement release: " + network.getName() + ", traffic type: " + network.getTrafficType());
 
-	    return true;
-	}
+        return true;
+    }
 
-	/**
-	 * Network disable
-	 */
-	@Override
-	public boolean shutdown(Network network, ReservationContext context,
-			boolean cleanup) throws ConcurrentOperationException,
-			ResourceUnavailableException {
-		s_logger.debug("ContrailVSrxElement shutdown");
-		return true;
-	}
+    /**
+     * Network disable
+     */
+    @Override
+    public boolean shutdown(Network network, ReservationContext context,
+            boolean cleanup) throws ConcurrentOperationException,
+            ResourceUnavailableException {
+        s_logger.debug("ContrailVSrxElement shutdown");
+        return true;
+    }
 
-	/**
-	 * Network delete
-	 */
-	@Override
-	public boolean destroy(Network network, ReservationContext context)
-			throws ConcurrentOperationException, ResourceUnavailableException {
-		s_logger.debug("ContrailVSrxElement destroy");
-		return true;
-	}
+    /**
+     * Network delete
+     */
+    @Override
+    public boolean destroy(Network network, ReservationContext context)
+            throws ConcurrentOperationException, ResourceUnavailableException {
+        s_logger.debug("ContrailVSrxElement destroy");
+        return true;
+    }
 
         @Override
         public boolean isReady(PhysicalNetworkServiceProvider provider) {
                 return true;
         }
 
-	@Override
-	public boolean shutdownProviderInstances(
-			PhysicalNetworkServiceProvider provider, ReservationContext context)
-			throws ConcurrentOperationException, ResourceUnavailableException {
-		s_logger.debug("ContrailVSrxElement shutdown ProviderInstances");
-		return true;
-	}
+    @Override
+    public boolean shutdownProviderInstances(
+            PhysicalNetworkServiceProvider provider, ReservationContext context)
+            throws ConcurrentOperationException, ResourceUnavailableException {
+        s_logger.debug("ContrailVSrxElement shutdown ProviderInstances");
+        return true;
+    }
 
-	@Override
-	public boolean canEnableIndividualServices() {
-		return true;
-	}
+    @Override
+    public boolean canEnableIndividualServices() {
+        return true;
+    }
 
-	@Override
-	public boolean verifyServicesCombination(Set<Service> services) {
-		s_logger.debug("ContrailVSrxElement verifyServicesCombination()");
-		s_logger.debug("Services: " + services);
-		return true;
-	}
+    @Override
+    public boolean verifyServicesCombination(Set<Service> services) {
+        s_logger.debug("ContrailVSrxElement verifyServicesCombination()");
+        s_logger.debug("Services: " + services);
+        return true;
+    }
 
-	@Override
-	public IpDeployer getIpDeployer(Network network) {
-		return this;
-	}
+    @Override
+    public IpDeployer getIpDeployer(Network network) {
+        return this;
+    }
 
-	@Override
-	public boolean applyIps(Network network, List<? extends PublicIpAddress> ipAddress, Set<Service> service) throws ResourceUnavailableException {
-		s_logger.debug("ContrailVSrxElement  applyIps(");
-		return false;
-	}
+    @Override
+    public boolean applyIps(Network network, List<? extends PublicIpAddress> ipAddress, Set<Service> service) throws ResourceUnavailableException {
+        s_logger.debug("ContrailVSrxElement  applyIps(");
+        return false;
+    }
 }
