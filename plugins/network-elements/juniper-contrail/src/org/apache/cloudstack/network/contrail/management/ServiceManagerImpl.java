@@ -106,7 +106,7 @@ public class ServiceManagerImpl implements ServiceManager {
      * create a new ServiceVM object.
      * @return
      */
-    @ActionEvent(eventType = EventTypes.EVENT_VM_CREATE, eventDescription="createServiceInstance", create = true)
+    @ActionEvent(eventType = EventTypes.EVENT_SERVICE_INSTANCE_VM_CREATE, eventDescription="createServiceInstance", create = true)
     private ServiceVirtualMachine createServiceVM(DataCenter zone, Account owner, VirtualMachineTemplate template,
             ServiceOffering serviceOffering, String name, ServiceInstance siObj, Network left, Network right) {
         long id = _vmDao.getNextInSequence(Long.class, "id");
@@ -185,12 +185,12 @@ public class ServiceManagerImpl implements ServiceManager {
         VirtualNetworkModel leftModel = _manager.getDatabase().lookupVirtualNetwork(left.getUuid(),
                 _manager.getCanonicalName(left), left.getTrafficType());
         if (leftModel == null) {
-            throw new CloudRuntimeException("Unable to read virtual-network object");
+            throw new CloudRuntimeException("Unable to read left virtual-network object");
         }
         VirtualNetworkModel rightModel = _manager.getDatabase().lookupVirtualNetwork(right.getUuid(),
                 _manager.getCanonicalName(right), right.getTrafficType());
         if (rightModel == null) {
-            throw new CloudRuntimeException("Unable to read virtual-network object");
+            throw new CloudRuntimeException("Unable to read right virtual-network object");
         }
 
         net.juniper.contrail.api.types.Project project;
@@ -282,7 +282,7 @@ public class ServiceManagerImpl implements ServiceManager {
      * delete a ServiceVM object.
      * @return
      */
-    @ActionEvent(eventType = EventTypes.EVENT_VM_DESTROY, eventDescription="deleteServiceInstance", create = true)
+    @ActionEvent(eventType = EventTypes.EVENT_SERVICE_INSTANCE_VM_DESTROY, eventDescription="deleteServiceInstance", create = true)
     private boolean stopAndDestroyServiceVM(Long instanceId) {
         boolean result;
 

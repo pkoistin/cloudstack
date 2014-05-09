@@ -317,6 +317,12 @@ public class ContrailGuru extends AdapterBase implements NetworkGuru {
         if (vmModel == null) {
             return;
         }
+        VirtualNetworkModel vnModel = _manager.getDatabase().lookupVirtualNetwork(network.getUuid(),
+                _manager.getCanonicalName(network), network.getTrafficType());
+        if (vnModel == null) {
+            s_logger.debug("vn not in local database");
+            return;
+        }
         VMInterfaceModel vmiModel = vmModel.getVMInterface(nicVO.getUuid());
         if (vmiModel == null) {
             return;
@@ -327,7 +333,7 @@ public class ContrailGuru extends AdapterBase implements NetworkGuru {
             return;
         }
         vmModel.removeSuccessor(vmiModel);
-        
+        vnModel.removeSuccessor(vmiModel);        
         if (!vmModel.hasDescendents()) {
             _manager.getDatabase().getVirtualMachines().remove(vmModel);
             try {

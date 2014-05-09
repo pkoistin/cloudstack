@@ -163,7 +163,7 @@ public class NetworkPolicyModel extends ModelObjectBase {
             PolicyRuleType vnRule = new PolicyRuleType(
                     new PolicyRuleType.SequenceType(1, 0), rule.getUuid(), "<>", protocol,
                     srcList, srcPorts, null, dstList, dstPorts,
-                    new PolicyRuleType.ActionListType(action, null, null, null));
+                    new PolicyRuleType.ActionListType(action, null, null, null, null));
             policyMap.addPolicyRule(vnRule);
         }  
         _policyMap = policyMap;        
@@ -190,7 +190,7 @@ public class NetworkPolicyModel extends ModelObjectBase {
         PolicyRuleType rule = new PolicyRuleType(
                 new PolicyRuleType.SequenceType(1, 0),  null, "<>", "any",
                 srcList, portAny, null, dstList, portAny,
-                new PolicyRuleType.ActionListType(action, gatewayName, siList, null));
+                new PolicyRuleType.ActionListType(action, gatewayName, siList, null, null));
         policyMap.addPolicyRule(rule);
         _policyMap = policyMap;        
     }

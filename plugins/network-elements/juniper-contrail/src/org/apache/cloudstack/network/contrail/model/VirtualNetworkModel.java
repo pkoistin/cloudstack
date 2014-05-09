@@ -66,7 +66,7 @@ public class VirtualNetworkModel extends ModelObjectBase {
     private NetworkIpam _ipam;
 
     private FloatingIpPoolModel _fipPoolModel;
-    private NetworkPolicyModel _policyModel;
+    private List<NetworkPolicyModel> _policyModelList = new ArrayList<NetworkPolicyModel>();
 
     public VirtualNetworkModel(Network network, String uuid, String name, TrafficType trafficType) {
         _uuid = uuid;
@@ -134,8 +134,10 @@ public class VirtualNetworkModel extends ModelObjectBase {
             successor.delete(controller);
         }
 
-        if (_policyModel != null) {
-            _policyModel.removeSuccessor(this);
+        if (!_policyModelList.isEmpty()) {
+            for (NetworkPolicyModel _policyModel: _policyModelList) {
+                _policyModel.removeSuccessor(this);
+            }
         }
 
         try {
@@ -234,14 +236,16 @@ public class VirtualNetworkModel extends ModelObjectBase {
             } 
         }
         
-        if (_policyModel == null) {
-            vn.clearNetworkPolicy();
-        } else if (!_policyModel.hasPolicyRules()) {
-            vn.clearNetworkPolicy();
-            _policyModel.removeSuccessor(this);
-        } else {
-            vn.setNetworkPolicy(_policyModel.getPolicy(), new VirtualNetworkPolicyType(
-                    new VirtualNetworkPolicyType.SequenceType(1, 0), null));
+        vn.clearNetworkPolicy();
+        if (!_policyModelList.isEmpty()) {
+            for (NetworkPolicyModel _policyModel: _policyModelList) {
+                if (!_policyModel.hasPolicyRules()) {
+                    _policyModel.removeSuccessor(this);
+                } else {
+                    vn.addNetworkPolicy(_policyModel.getPolicy(), new VirtualNetworkPolicyType(
+                            new VirtualNetworkPolicyType.SequenceType(1, 0), null));
+                }
+            }
         }
      
         if (_ipam == null) {
@@ -424,17 +428,17 @@ public class VirtualNetworkModel extends ModelObjectBase {
         
         List<ObjectReference<VirtualNetworkPolicyType>> policyRefs = _vn.getNetworkPolicy();
         
-        if ((policyRefs == null || policyRefs.isEmpty()) && _policyModel != null) {
+        if ((policyRefs == null || policyRefs.isEmpty()) && !_policyModelList.isEmpty() ) {
             return false;
         }
         
-        if ((policyRefs != null && !policyRefs.isEmpty()) && _policyModel == null) {
+        if ((policyRefs != null && !policyRefs.isEmpty()) && _policyModelList.isEmpty() ) {
             return false;
         }
         
-        if (policyRefs != null && !policyRefs.isEmpty() && _policyModel != null) {
+        if (policyRefs != null && !policyRefs.isEmpty() &&  !_policyModelList.isEmpty()) {
             ObjectReference<VirtualNetworkPolicyType> ref = policyRefs.get(0);
-            if (!ref.getUuid().equals(_policyModel.getUuid())) {
+            if (!ref.getUuid().equals(_policyModelList.get(0).getUuid())) {
                 return false; 
             }
         }
@@ -532,23 +536,10 @@ public class VirtualNetworkModel extends ModelObjectBase {
             return true;
         }
         
+        // Sort the list
+        
         //both must be non empty lists
-        ObjectReference<VirtualNetworkPolicyType> ref1 = currentPolicyRefs.get(0);
-        ObjectReference<VirtualNetworkPolicyType> ref2 = latestPolicyRefs.get(0);
-
-        if ((ref1 != null && ref2 == null) || (ref1 == null && ref2 != null)) {
-            return false;
-        }
-        if ((ref1.getUuid() != null && ref2.getUuid() == null) || (ref1.getUuid() == null && ref2.getUuid() != null)) {
-            return false;
-        }
-        if (ref1.getUuid() == null && ref2.getUuid() == null) {
-            return true;
-        }
-        if (!ref1.getUuid().equals(ref2.getUuid())) {
-            return false; 
-        }
-        return true;
+        return currentPolicyRefs.equals(latestPolicyRefs);
     }
 
     public FloatingIpPoolModel getFipPoolModel() {
@@ -560,16 +551,19 @@ public class VirtualNetworkModel extends ModelObjectBase {
     }
     
     public NetworkPolicyModel getNetworkPolicyModel() {
-        return _policyModel;
+        if (!_policyModelList.isEmpty())
+            return _policyModelList.get(0);
+        else
+            return null;
     }
     
     public void addToNetworkPolicy(NetworkPolicyModel policyModel) {
-        if (_policyModel != null) {
-            _policyModel.removeSuccessor(this);
-        }
-        _policyModel = policyModel;
-        if (_policyModel != null) {
-            _policyModel.addSuccessor(this);
-        }
+            _policyModelList.add(policyModel);
+            policyModel.addSuccessor(this);
+    } 
+    
+    public void removeFromNetworkPolicy(NetworkPolicyModel policyModel) {
+            _policyModelList.remove(policyModel);
+            policyModel.removeSuccessor(this);
     } 
 }

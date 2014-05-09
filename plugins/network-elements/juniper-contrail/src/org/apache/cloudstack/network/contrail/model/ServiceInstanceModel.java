@@ -165,7 +165,7 @@ public class ServiceInstanceModel extends ModelObjectBase {
         }
         si_obj.setName(getName());
         si_obj.setServiceTemplate(_tmpl);
-        si_obj.setProperties(new ServiceInstanceType(false, _mgmtName, _leftName, null, _rightName, null,
+        si_obj.setProperties(new ServiceInstanceType(false, _mgmtName, _leftName, null, _rightName, null, null,
                 new ServiceInstanceType.ServiceScaleOutType(1, false)));
         try {
             ApiConnector api = controller.getApiAccessor();
@@ -179,20 +179,25 @@ public class ServiceInstanceModel extends ModelObjectBase {
     }
     
     private void clearServicePolicy(ModelController controller) {
-    	_left.addToNetworkPolicy(null);
-    	_right.addToNetworkPolicy(null);
+        if (_left == null)
+            throw new CloudRuntimeException("clearServicePolicy(_left ptr null)");
+        if (_right == null)
+            throw new CloudRuntimeException("clearServicePolicy(_right ptr null)");
+
+    	_left.removeFromNetworkPolicy(_policy);
+    	_right.removeFromNetworkPolicy(_policy);
+    	try {
+            _left.update(controller.getManager().getModelController());
+            _right.update(controller.getManager().getModelController());
+        } catch (Exception ex) {
+            s_logger.error("virtual-network update for policy delete: ", ex);
+        }
     	try {
             controller.getManager().getDatabase().getNetworkPolicys().remove(_policy);
             _policy.delete(controller.getManager().getModelController());
             _policy = null;
         } catch (Exception e) {
             s_logger.error(e);
-        }
-    	try {
-            _left.update(controller.getManager().getModelController());
-            _right.update(controller.getManager().getModelController());
-        } catch (Exception ex) {
-            s_logger.error("virtual-network update for policy delete: ", ex);
         }
     }
     
@@ -255,7 +260,7 @@ public class ServiceInstanceModel extends ModelObjectBase {
             tmpl = new ServiceTemplate();
             tmpl.setName(_templateName);
             tmpl.setUuid(_templateId);
-            ServiceTemplateType props = new ServiceTemplateType("in-network", null, _templateUrl, false, null);
+            ServiceTemplateType props = new ServiceTemplateType("in-network", null, _templateUrl, false, null, null, false);
             tmpl.setProperties(props);
             try {
                 ApiConnector api = controller.getApiAccessor();

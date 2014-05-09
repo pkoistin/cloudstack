@@ -75,7 +75,6 @@ public class PublicNetworkTest extends TestCase {
 
     @BeforeClass
     public static void globalSetUp() throws Exception {
-        ApiConnectorFactory.setImplementation(ApiConnectorMockito.class);
         s_logger.info("mysql server is getting launched ");
         _mysql_server_port = TestDbSetup.init(null);
         s_logger.info("mysql server launched on port " + _mysql_server_port);
