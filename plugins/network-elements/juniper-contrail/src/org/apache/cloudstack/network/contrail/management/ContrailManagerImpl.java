@@ -245,7 +245,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
                     serviceProviderMap.put(svc, lbProviderSet);
                 } else if(offeringName.equals(vpcPublicLbRouterOfferingName)) {
                     Set<Provider> lbProviderSet = new HashSet<Provider>();
-                    lbProviderSet.add(Provider.VirtualRouter);
+                    lbProviderSet.add(Provider.VPCVirtualRouter);
                     serviceProviderMap.put(svc, lbProviderSet);
                 }
                 continue;
@@ -304,8 +304,6 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
             if (svc.equals(Service.Lb.getName())) {
                 List<String> lbProviderSet = new ArrayList<String>();
                 lbProviderSet.add(Provider.InternalLbVm.getName());
-                lbProviderSet.add(Provider.VirtualRouter.getName());
-                serviceProviderMap.put(svc, lbProviderSet);
                 continue;
             }
             serviceProviderMap.put(svc, providerSet);
@@ -372,8 +370,8 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
 
         _vpcRouterOffering = LocateNetworkOffering(vpcRouterOfferingName, vpcRouterOfferingDisplayText, 
                                                                   Provider.JuniperContrailVpcRouter);
-        _vpcPublicLbRouterOffering = LocateNetworkOffering(vpcPublicLbRouterOfferingName, vpcPublicLbRouterOfferingDisplayText, 
-                                                                  Provider.JuniperContrailVpcRouter);
+        //_vpcPublicLbRouterOffering = LocateNetworkOffering(vpcPublicLbRouterOfferingName, vpcPublicLbRouterOfferingDisplayText, 
+        //                                                          Provider.JuniperContrailVpcRouter);
         _vpcOffering = LocateVpcOffering();
 
         } catch (Exception ex) {
@@ -579,7 +577,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
         for (PhysicalNetworkVO phys : net_list) {
             if(_physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailRouter.getName()) != null ||
                _physProviderDao.findByServiceProvider(phys.getId(), Provider.JuniperContrailVpcRouter.getName()) != null || 
-               _physProviderDao.findByServiceProvider(phys.getId(), Provider.VirtualRouter.getName()) != null ||
+               //_physProviderDao.findByServiceProvider(phys.getId(), Provider.VPCVirtualRouter.getName()) != null ||
                _physProviderDao.findByServiceProvider(phys.getId(), Provider.InternalLbVm.getName()) != null) {
                 return true;
             }  
