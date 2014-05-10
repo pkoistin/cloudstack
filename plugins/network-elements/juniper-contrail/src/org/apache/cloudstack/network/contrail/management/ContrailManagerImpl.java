@@ -304,6 +304,7 @@ public class ContrailManagerImpl extends ManagerBase implements ContrailManager 
             if (svc.equals(Service.Lb.getName())) {
                 List<String> lbProviderSet = new ArrayList<String>();
                 lbProviderSet.add(Provider.InternalLbVm.getName());
+                serviceProviderMap.put(svc, lbProviderSet);
                 continue;
             }
             serviceProviderMap.put(svc, providerSet);
