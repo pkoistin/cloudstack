@@ -402,10 +402,6 @@ fi
 if [ ! -f %{_datadir}/cloudstack-common/scripts/vm/hypervisor/xenserver/vhd-util ] ; then
     echo Please download vhd-util from http://download.cloud.com.s3.amazonaws.com/tools/vhd-util and put it in 
     echo %{_datadir}/cloudstack-common/scripts/vm/hypervisor/xenserver/
-    #wget http://download.cloud.com.s3.amazonaws.com/tools/vhd-util
-    wget http://10.84.5.102/cloudstack/vhd-util
-    chmod +x vhd-util
-    mv vhd-util %{_datadir}/cloudstack-common/scripts/vm/hypervisor/xenserver/
 fi
 
 # change cloud user's home to 4.1+ version if needed. Would do this via 'usermod', but it
